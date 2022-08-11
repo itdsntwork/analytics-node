@@ -12,7 +12,7 @@ const version = require('./package.json').version
 const isString = require('lodash.isstring')
 
 const setImmediate = global.setImmediate || process.nextTick.bind(process)
-const noop = () => {}
+const noop = () => { }
 
 class Analytics {
   /**
@@ -32,7 +32,7 @@ class Analytics {
    *   @property {Function} [errorHandler] (optional)
    */
 
-  constructor (writeKey, options) {
+  constructor(writeKey, options) {
     options = options || {}
 
     assert(writeKey, 'You must pass your Segment project\'s write key.')
@@ -69,7 +69,7 @@ class Analytics {
     }
   }
 
-  _validate (message, type) {
+  _validate(message, type) {
     looselyValidate(message, type)
   }
 
@@ -81,9 +81,9 @@ class Analytics {
    * @return {Analytics}
    */
 
-  identify (message, callback) {
+  async identify(message, callback) {
     this._validate(message, 'identify')
-    this.enqueue('identify', message, callback)
+    await this.enqueue('identify', message, callback)
     return this
   }
 
@@ -95,7 +95,7 @@ class Analytics {
    * @return {Analytics}
    */
 
-  group (message, callback) {
+  group(message, callback) {
     this._validate(message, 'group')
     this.enqueue('group', message, callback)
     return this
@@ -109,9 +109,9 @@ class Analytics {
    * @return {Analytics}
    */
 
-  track (message, callback) {
+  async track(message, callback) {
     this._validate(message, 'track')
-    this.enqueue('track', message, callback)
+    await this.enqueue('track', message, callback)
     return this
   }
 
@@ -123,7 +123,7 @@ class Analytics {
    * @return {Analytics}
    */
 
-  page (message, callback) {
+  page(message, callback) {
     this._validate(message, 'page')
     this.enqueue('page', message, callback)
     return this
@@ -137,7 +137,7 @@ class Analytics {
    * @return {Analytics}
    */
 
-  screen (message, callback) {
+  screen(message, callback) {
     this._validate(message, 'screen')
     this.enqueue('screen', message, callback)
     return this
@@ -151,7 +151,7 @@ class Analytics {
    * @return {Analytics}
    */
 
-  alias (message, callback) {
+  alias(message, callback) {
     this._validate(message, 'alias')
     this.enqueue('alias', message, callback)
     return this
@@ -167,7 +167,7 @@ class Analytics {
    * @api private
    */
 
-  enqueue (type, message, callback) {
+  async enqueue(type, message, callback) {
     callback = callback || noop
 
     if (!this.enable) {
@@ -213,14 +213,14 @@ class Analytics {
 
     if (!this.flushed) {
       this.flushed = true
-      this.flush()
+      await this.flush()
       return
     }
 
     const hasReachedFlushAt = this.queue.length >= this.flushAt
     const hasReachedQueueSize = this.queue.reduce((acc, item) => acc + JSON.stringify(item).length, 0) >= this.maxQueueSize
     if (hasReachedFlushAt || hasReachedQueueSize) {
-      this.flush()
+      await this.flush()
       return
     }
 
@@ -236,12 +236,12 @@ class Analytics {
    * @return {Analytics}
    */
 
-  flush (callback) {
+  async flush(callback) {
     callback = callback || noop
 
     if (!this.enable) {
       setImmediate(callback)
-      return Promise.resolve()
+      return
     }
 
     if (this.timer) {
@@ -251,7 +251,7 @@ class Analytics {
 
     if (!this.queue.length) {
       setImmediate(callback)
-      return Promise.resolve()
+      return
     }
 
     const items = this.queue.splice(0, this.flushAt)
@@ -313,7 +313,7 @@ class Analytics {
       })
   }
 
-  _isErrorRetryable (error) {
+  _isErrorRetryable(error) {
     // Retry Network Errors.
     if (axiosRetry.isNetworkError(error)) {
       return true
